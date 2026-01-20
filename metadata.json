@@ -1,0 +1,5 @@
+{
+  "name": "Estudo Ciclo Pro",
+  "description": "Uma aplicação completa para gerenciamento de ciclos de estudo, permitindo registro de matérias, definição de carga horária e frequência, e acompanhamento de desempenho com gráficos de acerto.",
+  "requestFramePermissions": []
+}
