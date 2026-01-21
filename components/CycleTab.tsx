@@ -32,13 +32,24 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
     const hStudied = filtered.filter(i => i.completed).reduce((acc, i) => acc + (i.hoursPerSession || 0), 0);
     const hToStudy = filtered.filter(i => !i.completed).reduce((acc, i) => acc + (i.hoursPerSession || 0), 0);
     
-    const correct = filterSubjectId === 'all' 
-      ? Array.from(new Set(filtered.map(f => f.subjectId))).reduce((acc, sid) => acc + (filtered.find(f => f.subjectId === sid)?.correct || 0), 0)
-      : (filtered.find(f => !f.completed)?.correct || filtered[0].correct);
-      
-    const wrong = filterSubjectId === 'all'
-      ? Array.from(new Set(filtered.map(f => f.subjectId))).reduce((acc, sid) => acc + (filtered.find(f => f.subjectId === sid)?.wrong || 0), 0)
-      : (filtered.find(f => !f.completed)?.wrong || filtered[0].wrong);
+    // Pega o progresso acumulado do item mais recente para a matéria selecionada
+    const target = filterSubjectId === 'all' ? null : filtered[0];
+    
+    let correct = 0;
+    let wrong = 0;
+
+    if (filterSubjectId === 'all') {
+      const subjectIds = Array.from(new Set(cycleItems.map(i => i.subjectId)));
+      subjectIds.forEach(sid => {
+        const lastItem = cycleItems.filter(i => i.subjectId === sid).sort((a,b) => b.id.localeCompare(a.id))[0];
+        correct += lastItem?.correct || 0;
+        wrong += lastItem?.wrong || 0;
+      });
+    } else {
+      const lastItem = filtered.sort((a,b) => b.id.localeCompare(a.id))[0];
+      correct = lastItem?.correct || 0;
+      wrong = lastItem?.wrong || 0;
+    }
 
     const total = correct + wrong;
     const correctPct = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -59,13 +70,13 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
   return (
     <div className="space-y-4">
       {showClearConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-red-950/40 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-red-950/40 backdrop-blur-sm modal-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full modal-zoom-in">
             <h3 className="text-xl font-black text-center text-gray-800 mb-2 uppercase tracking-tight">Limpar Tudo?</h3>
             <p className="text-center text-gray-500 text-sm mb-8">Isso excluirá permanentemente todo o progresso do seu ciclo atual.</p>
             <div className="flex flex-col gap-3">
-              <button onClick={() => { clearCycle(); setShowClearConfirm(false); }} className="w-full bg-red-500 text-white font-black py-4 rounded-2xl uppercase text-xs">Sim, Limpar Ciclo</button>
-              <button onClick={() => setShowClearConfirm(false)} className="w-full bg-gray-100 text-gray-500 font-black py-4 rounded-2xl uppercase text-xs">Manter Estudos</button>
+              <button onClick={() => { clearCycle(); setShowClearConfirm(false); }} className="w-full bg-red-500 text-white font-black py-4 rounded-2xl uppercase text-xs hover:bg-red-600 transition-colors">Sim, Limpar Ciclo</button>
+              <button onClick={() => setShowClearConfirm(false)} className="w-full bg-gray-100 text-gray-500 font-black py-4 rounded-2xl uppercase text-xs hover:bg-gray-200 transition-colors">Manter Estudos</button>
             </div>
           </div>
         </div>
@@ -74,7 +85,7 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
       <section className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest px-2">Desempenho Geral</h2>
-          <select value={filterSubjectId} onChange={(e) => setFilterSubjectId(e.target.value)} className="bg-indigo-50 border-2 border-indigo-100 text-[10px] font-black uppercase py-1.5 px-3 rounded-xl outline-none text-indigo-600">
+          <select value={filterSubjectId} onChange={(e) => setFilterSubjectId(e.target.value)} className="bg-indigo-50 border-2 border-indigo-100 text-[10px] font-black uppercase py-1.5 px-3 rounded-xl outline-none text-indigo-600 cursor-pointer">
             <option value="all">Todas as Disciplinas</option>
             {uniqueSubjects.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
           </select>
@@ -113,7 +124,7 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
                   type="checkbox" 
                   checked={item.completed} 
                   onChange={() => updateCycleItem(item.id, { completed: !item.completed })} 
-                  className="w-6 h-6 rounded-full border-2 border-gray-200 text-indigo-600 transition-all cursor-pointer" 
+                  className="w-6 h-6 rounded-full border-2 border-gray-200 text-indigo-600 transition-all cursor-pointer accent-indigo-600" 
                 />
                 
                 <div className="flex-grow">
@@ -121,7 +132,7 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
                     <h3 className={`font-black text-sm uppercase ${item.completed ? 'text-gray-400' : 'text-gray-900'}`}>{item.name}</h3>
                     {item.notebookUrl && (
                       <a href={item.notebookUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-600 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
                           <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
                         </svg>
@@ -140,7 +151,7 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
                   <button 
                     onClick={() => { setEditingId(item.id); setInputCorrect(0); setInputWrong(0); setTempUrl(item.notebookUrl); }} 
                     disabled={item.completed} 
-                    className="p-2 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                    className="p-2 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all disabled:opacity-0"
                     title="Registrar Questões"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -155,16 +166,16 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
                 </div>
 
                 {editingId === item.id && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-950/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-in zoom-in duration-300">
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-950/40 backdrop-blur-sm p-4 modal-fade-in">
+                    <div className="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl modal-zoom-in">
                       <div className="flex justify-between items-start mb-6">
                         <div>
                           <h3 className="text-lg font-black uppercase tracking-tight">{item.name}</h3>
                           <p className="text-[10px] text-gray-400 font-bold uppercase">Registrar Novos Resultados</p>
                         </div>
-                        <div className="flex items-center gap-1">
-                           <button onClick={() => setAddMode(true)} className={`px-2 py-1 text-[8px] font-black rounded uppercase ${addMode ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-400'}`}>Somar</button>
-                           <button onClick={() => setAddMode(false)} className={`px-2 py-1 text-[8px] font-black rounded uppercase ${!addMode ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-400'}`}>Definir</button>
+                        <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg">
+                           <button onClick={() => setAddMode(true)} className={`px-2 py-1 text-[8px] font-black rounded uppercase transition-all ${addMode ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-100'}`}>Somar</button>
+                           <button onClick={() => setAddMode(false)} className={`px-2 py-1 text-[8px] font-black rounded uppercase transition-all ${!addMode ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-100'}`}>Definir</button>
                         </div>
                       </div>
                       
@@ -182,7 +193,7 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
                         
                         <div className="space-y-1">
                           <label className="text-[9px] font-black text-gray-400 uppercase ml-1">Novo Link do Caderno (Opcional)</label>
-                          <input type="url" value={tempUrl} onChange={e => setTempUrl(e.target.value)} placeholder="https://..." className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none font-bold text-sm" />
+                          <input type="url" value={tempUrl} onChange={e => setTempUrl(e.target.value)} placeholder="https://..." className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none font-bold text-sm focus:border-indigo-300" />
                         </div>
                       </div>
 

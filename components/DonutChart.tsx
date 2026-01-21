@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { PieChart, Pie, Cell } from 'recharts';
 
 interface DonutChartProps {
   correctPercent: number;
@@ -8,38 +7,63 @@ interface DonutChartProps {
 }
 
 const DonutChart: React.FC<DonutChartProps> = ({ correctPercent, wrongPercent }) => {
-  const hasData = (correctPercent + wrongPercent) > 0;
-  // Gráfico menor para o layout de resumo compacto
-  const chartSize = 160;
+  const size = 160;
+  const strokeWidth = 15;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
   
-  const data = hasData 
-    ? [
-        { name: 'Acertos', value: correctPercent, color: '#22c55e' },
-        { name: 'Erros', value: wrongPercent, color: '#ef4444' }
-      ]
-    : [{ name: 'Vazio', value: 100, color: '#f3f4f6' }];
+  const hasData = (correctPercent + wrongPercent) > 0;
+  
+  // Cálculo dos arcos
+  const correctOffset = circumference - (correctPercent / 100) * circumference;
+  const wrongOffset = circumference - (wrongPercent / 100) * circumference;
+  const wrongRotate = (correctPercent / 100) * 360;
 
   return (
     <div className="w-full h-full flex items-center justify-center relative">
-      <PieChart width={chartSize} height={chartSize}>
-        <Pie
-          data={data}
-          cx={chartSize / 2}
-          cy={chartSize / 2}
-          innerRadius={50}
-          outerRadius={70}
-          paddingAngle={hasData ? 5 : 0}
-          dataKey="value"
-          startAngle={90}
-          endAngle={450}
-          stroke="none"
-          isAnimationActive={true}
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color} />
-          ))}
-        </Pie>
-      </PieChart>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
+        {/* Fundo Cinza */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="transparent"
+          stroke="#f3f4f6"
+          strokeWidth={strokeWidth}
+        />
+        
+        {hasData ? (
+          <>
+            {/* Erros (Red) */}
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="transparent"
+              stroke="#ef4444"
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              strokeDashoffset={wrongOffset}
+              strokeLinecap="round"
+              className="transition-all duration-1000 ease-out"
+              transform={`rotate(${wrongRotate} ${size/2} ${size/2})`}
+            />
+            {/* Acertos (Green) */}
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="transparent"
+              stroke="#22c55e"
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              strokeDashoffset={correctOffset}
+              strokeLinecap="round"
+              className="transition-all duration-1000 ease-out"
+            />
+          </>
+        ) : null}
+      </svg>
       
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         {hasData ? (
