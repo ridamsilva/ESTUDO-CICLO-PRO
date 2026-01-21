@@ -1,59 +1,51 @@
 
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 import { User } from '../types';
 
 interface LoginViewProps {
   onLogin: (user: User) => void;
 }
 
-const USERS_STORAGE_KEY = 'estudo_ciclo_users_v2';
-
 const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [isRegistering, setIsRegistering] = useState(false);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const getUsers = (): User[] => {
-    try {
-      const data = localStorage.getItem(USERS_STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      return [];
-    }
-  };
-
-  const generateId = () => {
-    if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
-    return Math.random().toString(36).substring(2) + Date.now().toString(36);
-  };
-
-  const handleAuth = (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    if (!username.trim() || !password.trim()) {
+    if (!email.trim() || !password.trim()) {
       setError('Preencha todos os campos.');
+      setIsLoading(false);
       return;
     }
 
-    const users = getUsers();
-
-    if (isRegistering) {
-      if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-        setError('Este usuário já existe.');
-        return;
-      }
-      const newUser: User = { id: generateId(), username, password };
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify([...users, newUser]));
-      onLogin(newUser);
-    } else {
-      const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
-      if (user) {
-        onLogin(user);
+    try {
+      if (isRegistering) {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (signUpError) throw signUpError;
+        alert('Cadastro realizado! Verifique seu e-mail ou faça login.');
+        setIsRegistering(false);
       } else {
-        setError('Usuário ou senha incorretos.');
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        // O App.tsx via onAuthStateChange cuidará de setar o usuário
       }
+    } catch (e: any) {
+      setError(e.message || 'Erro ao processar solicitação.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -67,23 +59,24 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             </svg>
           </div>
           <h1 className="text-2xl font-black text-gray-800 uppercase tracking-tight">
-            {isRegistering ? 'Criar Conta' : 'Acesse seu Ciclo'}
+            {isRegistering ? 'Criar Conta' : 'Acesso Nuvem'}
           </h1>
           <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">
-            Estudo Ciclo Pro
+            Estudo Ciclo Pro Cloud
           </p>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
           <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Usuário</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">E-mail</label>
             <input
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-indigo-500 outline-none transition-all font-bold"
-              placeholder="Digite seu usuário"
-              autoComplete="username"
+              placeholder="exemplo@email.com"
+              autoComplete="email"
+              disabled={isLoading}
             />
           </div>
           <div>
@@ -95,6 +88,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-indigo-500 outline-none transition-all font-bold"
               placeholder="••••••••"
               autoComplete={isRegistering ? "new-password" : "current-password"}
+              disabled={isLoading}
             />
           </div>
 
@@ -106,9 +100,10 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl shadow-lg shadow-indigo-100 active:scale-95 transition-all uppercase text-xs"
+            disabled={isLoading}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl shadow-lg shadow-indigo-100 active:scale-95 transition-all uppercase text-xs disabled:opacity-50"
           >
-            {isRegistering ? 'Cadastrar Agora' : 'Entrar no Sistema'}
+            {isLoading ? 'Aguarde...' : (isRegistering ? 'Finalizar Cadastro' : 'Entrar na Conta')}
           </button>
         </form>
 
@@ -120,7 +115,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             }}
             className="text-indigo-400 hover:text-indigo-600 text-[10px] font-black uppercase tracking-widest transition-colors"
           >
-            {isRegistering ? 'Já tenho uma conta? Entrar' : 'Não tem conta? Cadastre-se'}
+            {isRegistering ? 'Já tenho conta? Acessar' : 'Não tem conta nuvem? Criar agora'}
           </button>
         </div>
       </div>
