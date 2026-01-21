@@ -19,6 +19,14 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
   const [filterSubjectId, setFilterSubjectId] = useState<string>('all');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
+  // Ordenação: Pendentes primeiro, Concluídas depois.
+  const sortedCycleItems = useMemo(() => {
+    return [...cycleItems].sort((a, b) => {
+      if (a.completed === b.completed) return 0;
+      return a.completed ? 1 : -1;
+    });
+  }, [cycleItems]);
+
   const uniqueSubjects = useMemo(() => {
     const map = new Map();
     cycleItems.forEach(item => { if (!map.has(item.subjectId)) map.set(item.subjectId, item.name); });
@@ -112,8 +120,8 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
         </div>
         
         <div className="space-y-3">
-          {cycleItems.map((item) => (
-            <div key={item.id} className={`group border rounded-2xl p-5 flex items-center gap-4 transition-all ${item.completed ? 'bg-gray-50 border-transparent opacity-50' : 'bg-white border-gray-100 hover:border-indigo-200 shadow-sm'}`}>
+          {sortedCycleItems.map((item) => (
+            <div key={item.id} className={`group border-2 rounded-2xl p-5 flex items-center gap-4 transition-all ${item.completed ? 'bg-gray-50 border-transparent opacity-60' : 'bg-white border-gray-100 hover:border-indigo-200 shadow-sm'}`}>
               <input 
                 type="checkbox" 
                 checked={item.completed} 
@@ -132,7 +140,7 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
                     </a>
                   )}
                 </div>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{item.hoursPerSession}H PLANEJADAS</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{item.hoursPerSession}H PLANEJADAS</p>
               </div>
 
               <div className="flex items-center gap-1">
@@ -193,7 +201,7 @@ const CycleTab: React.FC<CycleTabProps> = ({ cycleItems, updateCycleItem, clearC
                           type="url" 
                           value={tempUrl} 
                           onChange={e => setTempUrl(e.target.value)} 
-                          placeholder="https://..." 
+                          placeholder="Link do Caderno (https://...)" 
                           className="w-full p-4 border-2 border-dashed border-gray-100 rounded-2xl outline-none font-bold text-[11px] text-gray-400 focus:border-indigo-300 text-center bg-gray-50/30" 
                         />
                       </div>
