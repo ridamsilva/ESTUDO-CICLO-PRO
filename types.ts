@@ -2,7 +2,7 @@
 export interface User {
   id: string;
   username: string;
-  password?: string; // Simples para persistência local
+  password?: string;
 }
 
 export interface Subject {
@@ -14,6 +14,15 @@ export interface Subject {
   isActive: boolean;
   totalCorrect: number;
   totalWrong: number;
+  created_at?: string;
+}
+
+export interface HistoryEntry {
+  id: string;
+  timestamp: string;
+  action: string;
+  details?: string;
+  type: 'status' | 'performance' | 'link' | 'system';
 }
 
 export interface CycleItem {
@@ -22,9 +31,12 @@ export interface CycleItem {
   name: string;
   notebookUrl: string;
   completed: boolean;
+  completed_at?: string | null;
+  created_at: string;
   correct: number;
   wrong: number;
   hoursPerSession: number;
+  history?: HistoryEntry[];
 }
 
 export enum Tab {
