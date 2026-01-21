@@ -54,7 +54,7 @@ const App: React.FC = () => {
         .from('cycle_items')
         .select('*')
         .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true }); // Ordem cronológica de estudo
 
       if (subjectsData) setSubjects(subjectsData);
       if (cycleData) setCycleItems(cycleData);
@@ -104,6 +104,21 @@ const App: React.FC = () => {
     const { error } = await supabase.from('subjects').delete().eq('id', id);
     if (!error) {
       setSubjects(prev => prev.filter(s => s.id !== id));
+    }
+  };
+
+  const deleteCycleItem = async (id: string) => {
+    const { error } = await supabase.from('cycle_items').delete().eq('id', id);
+    if (!error) {
+      setCycleItems(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
+  const clearCycle = async () => {
+    if (!currentUser) return;
+    const { error } = await supabase.from('cycle_items').delete().eq('user_id', currentUser.id);
+    if (!error) {
+      setCycleItems([]);
     }
   };
 
@@ -200,7 +215,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {isLoadingData && (
-        <div className="fixed inset-0 z-[110] bg-indigo-900/10 backdrop-blur-[2px] flex items-center justify-center">
+        <div className="fixed inset-0 z-[110] bg-indigo-900/10 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
           <div className="bg-white p-4 rounded-full shadow-lg">
             <svg className="h-6 w-6 text-indigo-600 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -230,10 +245,10 @@ const App: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 md:gap-4">
             <nav className="flex gap-1 md:gap-2">
-              <button onClick={() => setActiveTab(Tab.SUBJECTS)} className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase ${activeTab === Tab.SUBJECTS ? 'bg-white text-indigo-600' : 'text-white'}`}>Disciplinas</button>
-              <button onClick={() => setActiveTab(Tab.CYCLE)} className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase ${activeTab === Tab.CYCLE ? 'bg-white text-indigo-600' : 'text-white'}`}>Meu Ciclo</button>
+              <button onClick={() => setActiveTab(Tab.SUBJECTS)} className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase transition-all ${activeTab === Tab.SUBJECTS ? 'bg-white text-indigo-600 shadow-md' : 'text-white hover:bg-indigo-500'}`}>Disciplinas</button>
+              <button onClick={() => setActiveTab(Tab.CYCLE)} className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase transition-all ${activeTab === Tab.CYCLE ? 'bg-white text-indigo-600 shadow-md' : 'text-white hover:bg-indigo-500'}`}>Meu Ciclo</button>
             </nav>
-            <button onClick={() => setShowLogoutConfirm(true)} className="p-2 rounded-lg bg-indigo-700 hover:bg-red-500 transition-all text-white">
+            <button onClick={() => setShowLogoutConfirm(true)} className="p-2 rounded-lg bg-indigo-700 hover:bg-red-500 transition-all text-white border border-indigo-400/30">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             </button>
           </div>
@@ -244,7 +259,12 @@ const App: React.FC = () => {
         {activeTab === Tab.SUBJECTS ? (
           <SubjectTab subjects={subjects} addSubject={addSubject} updateSubject={updateSubject} toggleAllSubjects={toggleAllSubjects} deleteSubject={deleteSubject} addToCycle={addToCycle} />
         ) : (
-          <CycleTab cycleItems={cycleItems} updateCycleItem={updateCycleItem} clearCycle={() => {}} />
+          <CycleTab 
+            cycleItems={cycleItems} 
+            updateCycleItem={updateCycleItem} 
+            clearCycle={clearCycle} 
+            deleteCycleItem={deleteCycleItem}
+          />
         )}
       </main>
       <footer className="bg-white border-t p-4 text-center text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">&copy; {new Date().getFullYear()} Estudo Ciclo Pro - Supabase Cloud Storage</footer>
